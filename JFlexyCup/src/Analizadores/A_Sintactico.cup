@@ -1,0 +1,206 @@
+/*----------------------------------------------------------------------------
+--------------------- 1ra. Area: Codigo de Usuario
+----------------------------------------------------------------------------*/
+
+//-------> Importaciones 
+//-------> Paquetes 
+
+package Analizadores;
+
+import java_cup.runtime.Symbol;
+import java.util.ArrayList;
+
+
+//-------> Codigo para el parser, variables, metodos
+
+parser code
+{:  
+    public static LinkedList<Escenarioo> ListaEscenario=new LinkedList<Escenarioo>();
+    public static LinkedList<Enemigo> ListaEnemigos=new LinkedList<Enemigo>();
+    public static LinkedList<Nave> ListaNave=new LinkedList<Nave>();
+    public static LinkedList<AcepErr> TablaErr=new LinkedList<AcepErr>();
+
+    public String sfondo,ssonido ="";
+    public String simagen_nave,simagen_disparo,ssonido_disparo,snombre,simagen_enemigo="";
+    public Double svida,sataque,sfrecuencia,svelocidad,spunteo=0;
+
+    public String resultado="";
+
+    //Metodo al que se llama automaticamente ante algun error sintactico
+    public void syntax_error(Symbol s)
+    {        
+        String lexema = s.value.toString();
+        int fila = s.right;
+        int columna = s.left;
+        
+        System.out.println("!!!!!!! Error Sintactico Recuperado !!!!!!!");
+        System.out.println("\t\tLexema: "+lexema);
+        System.out.println("\t\tFila: "+fila);
+        System.out.println("\t\tColumna: "+columna);
+       
+        //lista_errores.add(new ErrorT(lexema, fila, columna,"sintactico" ,"Simbolo no esperado"));
+        AcepErr datos =new AcepErr(lexema, "ERROR SINTACTICO" ,fila,columna,"Simbolo no esperado");
+            TablaErr.add(datos);
+    }
+
+    //Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {        
+        String lexema = s.value.toString();
+        int fila = s.right;
+        int columna = s.left;
+        
+        System.out.println("!!!!!!! Error Sintactico, Panic Mode !!!!!!! ");
+        System.out.println("\t\tLexema: "+lexema);
+        System.out.println("\t\tFila: "+fila);
+        System.out.println("\t\tColumna: "+columna);
+
+       AcepErr datos =new AcepErr(lexema, "ERROR SINTACTICO" ,fila,columna,"Simbolo no esperado Error Fatal");
+                   TablaErr.add(datos);
+
+        //lista_errores.add(new ErrorT(lexema, fila, columna,"sintactico" ,"Simbolo no esperado, Panic Mode"));
+    }
+
+    public void semantic(Symbol cur_token, String n) 
+    {
+        System.out.println("error semantico ");
+    }
+
+    public void semantic(String msg, Object obj) {}
+
+:}
+
+
+//-------> Codigo para las acciones gramaticales
+
+action code
+{:
+//METODOS Y VARIABLES QUE SOLO PUEDEN SER ACCEDIDAS DENTRO DEL PARSER
+int exponente(int exp){
+int resultado= 1;
+for(int i=1; i<exp; i++){
+resultado = resultado *2;
+}
+return resultado;
+}
+
+:}  
+
+
+
+/*----------------------------------------------------------------------------
+--------------------- 2da. Area: Declaraciones
+----------------------------------------------------------------------------*/
+
+//-------> Simbolos
+terminal coma, dosp;
+terminal apar, cpar, alla, clla;
+
+//-------> Operadores
+terminal mas, menos, por, dividir;
+
+//-------> Reservadas del sistem
+terminal rescenario,rnave,renemigos,rfondo,rsonido,rimagen_nave;
+terminal rimagen_disparo,rsonido_disparo,rvida,rataque,rnombre;
+terminal rimagen_enemigo,rfrecuencia,rvelocidad,rpunteo;
+terminal String id, numero,ruta;
+
+non terminal INICIO, CUERPO,OPCIONES,CUERPOE,DATAE,CUERPON,DATAN,CUERPOENEMIGOS,CUERPOENEMIGO,DATAENEMIGO;
+non terminal ESTRUCTURA, ESCENARIO, NAVE, ENEMIGOS, ENEMIGO, E;
+
+
+precedence left mas, menos;
+precedence left por, dividir;
+
+start with INICIO;
+
+
+/*-------------------------------------------------------------------
+--------------------- 3ra. y ultima area: Reglas Sintacticas
+-------------------------------------------------------------------*/
+INICIO::= CUERPO
+    | error INICIO
+    |;
+
+CUERPO::= ruta dosp alla ESTRUCTURA clla;
+
+ESTRUCTURA::= ESTRUCTURA OPCIONES
+    | OPCIONES;
+
+OPCIONES::= ESCENARIO
+    | NAVE
+    | ENEMIGOS;
+
+ESCENARIO::= rescenario dosp alla CUERPOE clla {: Escenarioo datos = new Escenarioo(sfondo,ssonido); ListaEscenario.add(datos);:};
+
+CUERPOE::= CUERPOE coma DATAE
+    |DATAE;
+
+DATAE::= rfondo dosp ruta:e{: sfondo=e; System.out.println(e+"");:}
+    | rsonido dosp ruta:e{: ssonido=e; System.out.println(e+"");:};
+
+NAVE::= rnave dosp alla CUERPON clla {: Nave datos = new Nave(simagen_nave,simagen_disparo,ssonido_disparo,svida,sataque); ListaNave.add(datos);:};
+
+CUERPON::= CUERPON coma DATAN
+    |DATAN;
+
+DATAN::= rimagen_nave dosp ruta:e{: simagen_nave=e; System.out.println(e+"");:} 
+    | rimagen_disparo dosp ruta:e{: simagen_disparo=e; System.out.println(e+"");:} 
+    | rsonido_disparo dosp ruta:e{: ssonido_disparo=e; System.out.println(e+"");:}
+    | rvida dosp E:e{: svida= Double.parseDouble(e); System.out.println(e+"");:}
+    | rataque dosp E:e{: sataque=Double.parseDouble(e); System.out.println(e+"");:};
+
+ENEMIGOS::= renemigos dosp alla CUERPOENEMIGOS clla;
+
+CUERPOENEMIGOS::= CUERPOENEMIGOS coma ENEMIGO
+    |ENEMIGO;
+
+ENEMIGO::= id dosp alla CUERPOENEMIGO clla {: Enemigo datos = new Enemigo(snombre,simagen_enemigo,simagen_disparo,ssonido_disparo,svida,sataque,sfrecuencia,svelocidad,spunteo); ListaEnemigos.add(datos);:};
+
+CUERPOENEMIGO::= CUERPOENEMIGO coma DATAENEMIGO
+    | DATAENEMIGO;
+
+DATAENEMIGO::= rnombre dosp ruta:e{: snombre=e; System.out.println(e+"");:}
+    | rimagen_enemigo dosp ruta:e{: simagen_enemigo=e; System.out.println(e+"");:}
+    | rimagen_disparo dosp ruta:e{: simagen_disparo=e; System.out.println(e+"");:}
+    | rsonido_disparo dosp ruta:e{: ssonido_disparo=e; System.out.println(e+"");:}
+    | rvida dosp E:e{: svida= Double.parseDouble(e); System.out.println(e+"");:}
+    | rataque dosp E:e{: sataque= Double.parseDouble(e); System.out.println(e+"");:}
+    | rfrecuencia dosp E:e{: sfrecuencia= Double.parseDouble(e); System.out.println(e+"");:}
+    | rvelocidad dosp E:e{: svelocidad= Double.parseDouble(e); System.out.println(e+"");:}
+    | rpunteo dosp E:e{: spunteo= Double.parseDouble(e); System.out.println(e+"");:};
+
+E::= E:a mas E:b{:
+
+    Double val1 = Double.parseDouble((String)a);
+    Double val2 = Double.parseDouble((String)b);
+    Double res=val1+val2;
+    RESULT= (res)+"";
+:}
+|E:a menos E:b{:
+    Double val1 = Double.parseDouble((String)a);
+    Double val2 = Double.parseDouble((String)b);
+    Double res=val1-val2;
+    RESULT= (res)+"";
+:}
+|E:a por E:b{:
+    Double val1 = Double.parseDouble((String)a);
+    Double val2 = Double.parseDouble((String)b);
+    Double res=val1*val2;
+    RESULT= (res)+"";
+:}
+|E:a dividir E:b{:
+    Double val1 = Double.parseDouble((String)a);
+    Double val2 = Double.parseDouble((String)b);
+    Double res=val1/val2;
+    RESULT= (res)+"";
+:}
+|numero:a {:
+
+    RESULT=a;
+:}
+|apar E:a cpar
+{:
+    RESULT=a;
+:};
+
